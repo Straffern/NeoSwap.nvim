@@ -27,7 +27,8 @@ NeoSwap simplifies word swapping in Neovim, making it easy to quickly rearrange 
 ## ✨ Features
 
 - Swap words with ease in Neovim using NeoSwap's built-in pattern matching.
-- Streamline your coding workflow with efficient word swapping.
+- Visual mode support: Select any text and swap it with adjacent words.
+- Streamline your coding workflow with efficient word and text swapping.
 
 ## 🛠️ Usage
 
@@ -41,11 +42,26 @@ To swap the position of adjacent words to the left of the cursor, use the `NeoSw
 ```vim
 :NeoSwapPrev
 ```
+
+### Visual Mode Support
+
+In visual mode, you can select any text and swap it with adjacent words:
+
+```vim
+:NeoSwapVisualNext
+:NeoSwapVisualPrev
+```
+
 You can also create keybindings to swap words more conveniently:
 
 ```lua
+-- Normal mode
 vim.keymap.set("n", "<leader>s", "<cmd>NeoSwapNext<cr>", { noremap = true, silent = true })
 vim.keymap.set("n", "<leader>S", "<cmd>NeoSwapPrev<cr>", { noremap = true, silent = true })
+
+-- Visual mode
+vim.keymap.set("v", "<leader>s", "<cmd>NeoSwapVisualNext<cr>", { noremap = true, silent = true })
+vim.keymap.set("v", "<leader>S", "<cmd>NeoSwapVisualPrev<cr>", { noremap = true, silent = true })
 ```
 ## 📦 Installation
 

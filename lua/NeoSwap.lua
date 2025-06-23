@@ -28,6 +28,10 @@ NeoSwap.setup = function()
   user_cmd("NeoSwapNext", "lua require('NeoSwap').swap_next()", {})
 
   user_cmd("NeoSwapPrev", "lua require('NeoSwap').swap_prev()", {})
+  
+  user_cmd("NeoSwapVisualNext", "lua require('NeoSwap').swap_visual_next()", { range = true })
+  
+  user_cmd("NeoSwapVisualPrev", "lua require('NeoSwap').swap_visual_prev()", { range = true })
 end
 
 NeoSwap.entity_pattern = {}
@@ -142,6 +146,102 @@ function NeoSwap.swap_next(cursor_pos, type)
 
   api.nvim_set_current_line(new_line)
   api.nvim_win_set_cursor(0, { cursor[1], new_c - 1 })
+end
+
+function NeoSwap.swap_visual_next(type)
+  type = type or "w"
+  
+  -- Get visual selection bounds
+  local start_pos = fn.getpos("'<")
+  local end_pos = fn.getpos("'>")
+  
+  -- Only handle single-line selections for now
+  if start_pos[2] ~= end_pos[2] then
+    vim.notify("Multi-line visual swapping not supported", vim.log.levels.WARN)
+    return
+  end
+  
+  local line = api.nvim_get_current_line()
+  local start_col = start_pos[3] - 1
+  local end_col = end_pos[3] - 1
+  
+  -- Get the selected text
+  local selected_text = line:sub(start_col + 1, end_col + 1)
+  
+  local _in = NeoSwap.entity_pattern[type]._in
+  local out = NeoSwap.entity_pattern[type].out
+  
+  -- Find the next word after the selection
+  local next_word_start = fn.match(line, _in, end_col + 1)
+  if next_word_start == -1 then
+    vim.notify("No word found after selection", vim.log.levels.INFO)
+    return
+  end
+  
+  local next_word_end = fn.match(line, _in .. out, next_word_start)
+  next_word_end = next_word_end == -1 and #line - 1 or next_word_end
+  
+  local next_word = line:sub(next_word_start + 1, next_word_end + 1)
+  
+  -- Build the new line
+  local new_line = (start_col > 0 and line:sub(1, start_col) or "")
+      .. next_word
+      .. line:sub(end_col + 2, next_word_start)
+      .. selected_text
+      .. line:sub(next_word_end + 2)
+  
+  api.nvim_set_current_line(new_line)
+  
+  -- Exit visual mode
+  vim.cmd('normal! v')
+end
+
+function NeoSwap.swap_visual_prev(type)
+  type = type or "w"
+  
+  -- Get visual selection bounds
+  local start_pos = fn.getpos("'<")
+  local end_pos = fn.getpos("'>")
+  
+  -- Only handle single-line selections for now
+  if start_pos[2] ~= end_pos[2] then
+    vim.notify("Multi-line visual swapping not supported", vim.log.levels.WARN)
+    return
+  end
+  
+  local line = api.nvim_get_current_line()
+  local start_col = start_pos[3] - 1
+  local end_col = end_pos[3] - 1
+  
+  -- Get the selected text
+  local selected_text = line:sub(start_col + 1, end_col + 1)
+  
+  local _in = NeoSwap.entity_pattern[type]._in
+  local out = NeoSwap.entity_pattern[type].out
+  local prev_end = NeoSwap.entity_pattern[type].prev_end
+  
+  -- Find the previous word before the selection
+  local line_before_selection = line:sub(1, start_col)
+  local prev_word_end = fn.match(line_before_selection, prev_end)
+  if prev_word_end == -1 then
+    vim.notify("No word found before selection", vim.log.levels.INFO)
+    return
+  end
+  
+  local prev_word_start = fn.match(line:sub(1, prev_word_end + 1), _in .. "\\+$")
+  local prev_word = line:sub(prev_word_start + 1, prev_word_end + 1)
+  
+  -- Build the new line
+  local new_line = (prev_word_start > 0 and line:sub(1, prev_word_start) or "")
+      .. selected_text
+      .. line:sub(prev_word_end + 2, start_col)
+      .. prev_word
+      .. line:sub(end_col + 2)
+  
+  api.nvim_set_current_line(new_line)
+  
+  -- Exit visual mode
+  vim.cmd('normal! v')
 end
 
 return NeoSwap
